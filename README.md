@@ -61,10 +61,10 @@
   - [x] Isolated Python 3.12 virtual environment & dependency management
   - [x] Secure API key handling (`.env` + `.gitignore` with push protection)
   - [x] Verified connection to Google Gemini 3.8 Flash via official `google-genai` SDK
-- [ ] **Milestone 1.2: Structured Diagnostic Engine**
-  - [ ] Implement Pydantic schema for type-safe bug diagnosis (`DiagnosticReport`)
-  - [ ] Extract root cause, failing line numbers, severity, and remediation strategy
-  - [ ] Schema-enforced JSON validation to eliminate model hallucinations
+- [x] **Milestone 1.2: Structured Diagnostic Engine**
+  - [x] Implement Pydantic schema for type-safe bug diagnosis (`DiagnosticReport`)
+  - [x] Extract root cause, failing line numbers, severity, and remediation strategy
+  - [x] Schema-enforced JSON validation to eliminate model hallucinations
 
 ### 📍 Phase 2: Closed-Loop Self-Healing Agent
 - [ ] **Milestone 2.1: Automated Patch Generation**
