@@ -130,7 +130,14 @@
 
 5. **Run the Autonomous Self-Healing Agent:**
    ```bash
-   python gitHealerAgent.py
+   # Autonomous repository-wide auto-healing:
+   python src/gitHealerAgent.py auto
+
+   # Or targeted surgical healing on specific files:
+   python src/gitHealerAgent.py heal discountCalculator.py tests/testDiscountCalculator.py
+
+   # Dry-run diagnostic scan (does not modify files):
+   python src/gitHealerAgent.py scan discountCalculator.py tests/testDiscountCalculator.py
    ```
 
 ---
