@@ -79,10 +79,11 @@
   - [x] Closed feedback loop: re-tests patched code iteratively until all tests pass
 
 ### 📍 Phase 3: Sandboxing & Safe Code Execution
-- [ ] **Milestone 3.1: Containerized Test Sandbox**
-  - [ ] Isolate patch verification inside lightweight Docker containers
-  - [ ] Restrict CPU, memory, and network access to prevent unsafe code execution
-  - [ ] Ephemeral container lifecycles for clean and reproducible test states
+- [x] **Milestone 3.1: Containerized Test Sandbox**
+  - [x] Isolate patch verification inside lightweight Docker containers
+  - [x] Restrict CPU, memory, and network access (`--network none`, `--memory 512m`)
+  - [x] Ephemeral container lifecycles (`--rm`) for clean and reproducible test states
+  - [x] Dynamic Docker daemon detection with automatic graceful local fallback
 
 ### 📍 Phase 4: GitHub Integration & Autonomous PR Bot
 - [ ] **Milestone 4.1: Developer CLI Tool**
