@@ -6,6 +6,7 @@
 [![AI-Powered](https://img.shields.io/badge/AI-Google%20Gemini%203.8%20Flash-orange.svg)](https://ai.google.dev/)
 [![Validation](https://img.shields.io/badge/Schema-Pydantic%20v2-green.svg)](https://docs.pydantic.dev/)
 [![Testing](https://img.shields.io/badge/Tested%20with-Pytest-yellow.svg)](https://docs.pytest.org/)
+[![GitHealer CI/CD](https://github.com/SSPF20/GitHealer/actions/workflows/git-healer.yml/badge.svg)](https://github.com/SSPF20/GitHealer/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 ---
@@ -86,12 +87,13 @@
   - [x] Dynamic Docker daemon detection with automatic graceful local fallback
 
 ### 📍 Phase 4: GitHub Integration & Autonomous PR Bot
-- [ ] **Milestone 4.1: Developer CLI Tool**
-  - [ ] Build a standalone terminal CLI (`git-healer scan`, `git-healer heal`)
-- [ ] **Milestone 4.2: GitHub Action & CI/CD Bot**
-  - [ ] Trigger automatically on `pull_request` events or failing CI workflow runs
-  - [ ] Post automated review comments explaining diagnosed root causes
-  - [ ] Open automated remediation Pull Requests containing verified passing code
+- [x] **Milestone 4.1: Developer CLI Tool**
+  - [x] Build a standalone terminal CLI (`git-healer scan`, `git-healer heal`) via `argparse`
+  - [x] Support configurable healing iterations (`--max-attempts`) and execution sandboxing (`--no-sandbox`)
+- [x] **Milestone 4.2: GitHub Action & CI/CD Bot**
+  - [x] Autonomous cloud workflow triggering on `push`, `pull_request`, and manual dispatch
+  - [x] Secure credential management via encrypted GitHub Repository Secrets
+  - [x] Automated cloud-based self-healing and test verification
 
 ---
 

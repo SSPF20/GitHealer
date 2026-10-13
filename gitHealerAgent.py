@@ -1,4 +1,6 @@
 import os
+import sys
+import argparse
 import subprocess
 from typing import Literal, Tuple
 from dotenv import load_dotenv
@@ -9,7 +11,7 @@ from pydantic import BaseModel, Field
 # 1. Load environment variables
 load_dotenv()
 
-# 2. Pydantic schema for the structured patch response
+# 2. Pydantic schema for structured patch response
 class HealReport(BaseModel):
     rootCause: str = Field(
         description="Explanation of why the test failed"
@@ -114,15 +116,48 @@ def requestHealPatch(sourceCode: str, testFailureTrace: str, attemptNumber: int)
     
     return modelResponse.parsed
 
-# 7. Main Orchestrator: The Closed-Loop Self-Healing Agent
-def healSourceFile(sourceFilePath: str, testFilePath: str, maxAttempts: int = 3) -> bool:
+# 7. Command: Scan (Dry-Run Diagnostic only)
+def scanSourceFile(sourceFilePath: str, testFilePath: str, useSandbox: bool = True) -> bool:
     """
-    Orchestrates the ReAct self-healing loop inside the Sandbox:
-    Sandboxed Test -> Diagnose -> Patch -> Re-test.
+    Runs a non-destructive diagnostic scan. Reports findings without modifying files.
     """
     print("\n" + "="*55)
-    print(f"🩺 GitHealer Sandbox Agent initiated for: {sourceFilePath}")
-    print(f"🎯 Target test suite:                    {testFilePath}")
+    print(f"🩺 GitHealer Diagnostic Scan (Dry-Run): {sourceFilePath}")
+    print(f"🎯 Target test suite:                   {testFilePath}")
+    print("="*55 + "\n")
+
+    testsPassed, testOutput = runTests(testFilePath, useSandbox=useSandbox)
+    
+    if testsPassed:
+        print("✅ Code is healthy! All tests passed without issues.")
+        return True
+
+    print("❌ Test failure detected. Generating diagnosis...\n")
+    
+    with open(sourceFilePath, "r") as file:
+        currentCode = file.read()
+        
+    diagnosticData: HealReport = requestHealPatch(currentCode, testOutput, attemptNumber=1)
+    
+    print("\n--- Diagnostic Findings ---")
+    print(f"📌 Severity: {diagnosticData.severityLevel}")
+    print(f"🔍 Root Cause:\n{diagnosticData.rootCause}\n")
+    print(f"💡 Recommended Strategy:\n{diagnosticData.suggestedFixStrategy}\n")
+    print("📋 Proposed Code (Dry-Run, not applied to disk):")
+    print("-" * 40)
+    print(diagnosticData.fixedSourceCode)
+    print("-" * 40)
+    return False
+
+# 8. Command: Heal (Closed-Loop Autonomous Repair)
+def healSourceFile(sourceFilePath: str, testFilePath: str, maxAttempts: int = 3, useSandbox: bool = True) -> bool:
+    """
+    Orchestrates the ReAct self-healing loop:
+    Test -> Diagnose -> Patch -> Re-test.
+    """
+    print("\n" + "="*55)
+    print(f"🩺 GitHealer Autonomous Repair initiated for: {sourceFilePath}")
+    print(f"🎯 Target test suite:                         {testFilePath}")
     print("="*55 + "\n")
     
     attemptCount = 1
@@ -130,27 +165,23 @@ def healSourceFile(sourceFilePath: str, testFilePath: str, maxAttempts: int = 3)
     while attemptCount <= maxAttempts:
         print(f"\n--- [Iteration {attemptCount} of {maxAttempts}] ---")
         
-        # Step A: Observe inside Docker Sandbox
-        testsPassed, testOutput = runTests(testFilePath, useSandbox=True)
+        testsPassed, testOutput = runTests(testFilePath, useSandbox=useSandbox)
         
         if testsPassed:
-            print("✅ All tests PASSED inside the Sandbox! Code is healthy.")
+            print("✅ All tests PASSED! The codebase is healthy.")
             return True
         
-        print("❌ Tests FAILED inside the Sandbox. Extracting failure trace...")
+        print("❌ Tests FAILED. Extracting failure trace...")
         
-        # Step B: Read current broken file from disk
         with open(sourceFilePath, "r") as file:
             currentCode = file.read()
             
-        # Step C: Reason (Gemini diagnosis and patch generation)
         healData: HealReport = requestHealPatch(currentCode, testOutput, attemptCount)
         
         print(f"\n🔍 Diagnosis: {healData.rootCause}")
         print(f"💡 Strategy:  {healData.suggestedFixStrategy}")
         print(f"⚡ Severity:  {healData.severityLevel}")
         
-        # Step D: Act (Apply the patch directly to the file)
         print(f"🩹 Applying surgical patch to {sourceFilePath}...")
         with open(sourceFilePath, "w") as file:
             file.write(healData.fixedSourceCode)
@@ -160,14 +191,49 @@ def healSourceFile(sourceFilePath: str, testFilePath: str, maxAttempts: int = 3)
     print(f"\n⚠️ GitHealer reached max attempts ({maxAttempts}) without passing all tests.")
     return False
 
-# 8. Entry point
+# 9. CLI Entry Point with argparse
+def main():
+    cliParser = argparse.ArgumentParser(
+        prog="git-healer",
+        description="🩺 GitHealer: Autonomous Code Review & Self-Healing Agent powered by Google Gemini",
+        epilog="Example: python gitHealerAgent.py heal discountCalculator.py testDiscountCalculator.py"
+    )
+    
+    subParsers = cliParser.add_subparsers(dest="command", required=True, help="Sub-command to execute")
+    
+    # --- SUBCOMMAND: heal ---
+    healParser = subParsers.add_parser("heal", help="Autonomously diagnose, patch, and verify code until tests pass")
+    healParser.add_argument("source_file", help="Path to the source code file to repair")
+    healParser.add_argument("test_file", help="Path to the test file to verify against")
+    healParser.add_argument("--max-attempts", type=int, default=3, help="Maximum self-healing attempts (default: 3)")
+    healParser.add_argument("--no-sandbox", action="store_true", help="Bypass Docker and run tests directly on local host")
+    
+    # --- SUBCOMMAND: scan ---
+    scanParser = subParsers.add_parser("scan", help="Run a dry-run diagnostic scan without modifying files on disk")
+    scanParser.add_argument("source_file", help="Path to the source code file to diagnose")
+    scanParser.add_argument("test_file", help="Path to the test file to verify against")
+    scanParser.add_argument("--no-sandbox", action="store_true", help="Bypass Docker and run tests directly on local host")
+    
+    args = cliParser.parse_args()
+    
+    useSandboxMode = not args.no_sandbox
+    
+    if args.command == "heal":
+        success = healSourceFile(
+            sourceFilePath=args.source_file,
+            testFilePath=args.test_file,
+            maxAttempts=args.max_attempts,
+            useSandbox=useSandboxMode
+        )
+        sys.exit(0 if success else 1)
+        
+    elif args.command == "scan":
+        healthy = scanSourceFile(
+            sourceFilePath=args.source_file,
+            testFilePath=args.test_file,
+            useSandbox=useSandboxMode
+        )
+        sys.exit(0 if healthy else 1)
+
 if __name__ == "__main__":
-    targetSourceFile = "discountCalculator.py"
-    targetTestFile = "testDiscountCalculator.py"
-    
-    success = healSourceFile(targetSourceFile, targetTestFile, maxAttempts=3)
-    
-    if success:
-        print("\n🎉 SUCCESS: GitHealer successfully cured the code inside the Sandbox!")
-    else:
-        print("\n❌ FAILED: Could not resolve all test failures automatically.")
+    main()

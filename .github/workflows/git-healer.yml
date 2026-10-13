@@ -1,0 +1,42 @@
+name: 🩺 GitHealer Autonomous CI/CD
+
+# 1. Triggers: Run automatically on pushes and pull requests to main, or manually
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  heal-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step A: Checkout repository code
+      - name: 📥 Check out repository code
+        uses: actions/checkout@v4
+
+      # Step B: Set up Python 3.12 environment
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Step C: Install dependencies
+      - name: 📦 Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step D: Execute GitHealer in the cloud
+      - name: 🩺 Execute GitHealer Agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python gitHealerAgent.py heal discountCalculator.py testDiscountCalculator.py
+
+      # Step E: Final verification that all tests are healthy
+      - name: ✅ Run final verification tests
+        run: |
+          pytest testDiscountCalculator.py
